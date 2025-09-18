@@ -87,12 +87,14 @@ class PhotoStorageServiceImpl implements PhotoStorageService {
 
     try {
       const dbPhotos = await db.getAllFromIndex('photos', 'by-order');
+      console.log('getAllPhotos: Found', dbPhotos.length, 'photos in database');
 
       return dbPhotos.map(dbPhoto => ({
         ...dbPhoto,
         dateAdded: new Date(dbPhoto.dateAdded),
       }));
     } catch (error) {
+      console.error('getAllPhotos error:', error);
       throw new Error(`Failed to get photos: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

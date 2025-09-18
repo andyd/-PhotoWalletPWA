@@ -1,21 +1,10 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { FileHandler } from '../services/fileHandler';
-import { PhotoUploadError } from '../types';
 import { APP_CONFIG } from '../utils/constants';
+import { useAppContext } from '../contexts/AppContext';
 
-interface PhotoUploaderProps {
-  onPhotosSelected: (files: File[]) => Promise<void>;
-  currentPhotoCount: number;
-  isLoading?: boolean;
-  errors?: PhotoUploadError[];
-}
-
-export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
-  onPhotosSelected,
-  currentPhotoCount,
-  isLoading = false,
-  errors = [],
-}) => {
+export const PhotoUploader: React.FC = () => {
+  const { photos, isLoading, error, actions } = useAppContext();
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,14 +22,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       }
 
       if (validFiles.length > 0) {
-        await onPhotosSelected(validFiles);
+        await actions.addPhotos(validFiles);
       }
     }
     // Reset the input
     if (event.target) {
       event.target.value = '';
     }
-  }, [onPhotosSelected]);
+  }, [actions]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -65,35 +54,41 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       }
 
       if (validFiles.length > 0) {
-        await onPhotosSelected(validFiles);
+        await actions.addPhotos(validFiles);
       }
     }
-  }, [onPhotosSelected]);
+  }, [actions]);
 
-  const remainingSlots = APP_CONFIG.MAX_PHOTOS - currentPhotoCount;
-  const canAddPhotos = remainingSlots > 0;
+  const canAddPhotos = photos.length < APP_CONFIG.MAX_PHOTOS;
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-6">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-        data-testid="file-input"
-      />
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Photo Wallet</h1>
-        <p className="text-gray-400 text-lg">
-          {currentPhotoCount === 0
-            ? 'Add up to 10 photos to your wallet'
-            : `${currentPhotoCount} of ${APP_CONFIG.MAX_PHOTOS} photos added`
-          }
-        </p>
+    <div className="w-full h-full flex flex-col safe-area-inset">
+      {/* Header */}
+      <div className="flex items-center justify-center p-4 border-b border-gray-800">
+        <h1 className="text-xl font-bold text-white">Photo Wallet</h1>
       </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+          data-testid="file-input"
+        />
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Photo Wallet</h1>
+          <p className="text-gray-400 text-lg">
+            {photos.length === 0
+              ? 'Add photos to your wallet'
+              : `${photos.length} photos added`
+            }
+          </p>
+        </div>
 
       {canAddPhotos ? (
         <div
@@ -139,8 +134,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   {isDragOver ? 'Drop photos here' : 'Add Photos'}
                 </p>
                 <p className="text-gray-400 text-sm">
-                  Tap here or drag and drop<br />
-                  {remainingSlots} slot{remainingSlots !== 1 ? 's' : ''} remaining
+                  Tap here or drag and drop
                 </p>
               </>
             )}
@@ -155,30 +149,28 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           </div>
           <p className="text-white text-lg font-medium mb-2">Wallet Full</p>
           <p className="text-gray-400">
-            You have the maximum of {APP_CONFIG.MAX_PHOTOS} photos.<br />
             Remove some photos to add new ones.
           </p>
         </div>
       )}
 
-      {errors.length > 0 && (
+      {error && (
         <div className="mt-6 w-full max-w-md">
-          {errors.map((error, index) => (
-            <div key={index} className="bg-red-500/20 border border-red-500 rounded p-3 mb-2">
-              <p className="text-red-200 text-sm">{error.message}</p>
-              {error.fileName && (
-                <p className="text-red-300 text-xs mt-1">File: {error.fileName}</p>
-              )}
-            </div>
-          ))}
+          <div className="bg-red-500/20 border border-red-500 rounded p-3 mb-2">
+            <p className="text-red-200 text-sm">{error.message}</p>
+            {error.fileName && (
+              <p className="text-red-300 text-xs mt-1">File: {error.fileName}</p>
+            )}
+          </div>
         </div>
       )}
 
-      <div className="mt-8 text-center">
-        <p className="text-gray-500 text-sm">
-          Supports JPEG, PNG, WebP images<br />
-          Maximum file size: 50MB each
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            Supports JPEG, PNG, WebP images<br />
+            Maximum file size: 50MB each
+          </p>
+        </div>
       </div>
     </div>
   );

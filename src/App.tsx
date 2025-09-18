@@ -4,67 +4,27 @@ import { useSettingsTrigger } from './hooks/useSettingsTrigger';
 import { PhotoUploader } from './components/PhotoUploader';
 import { PhotoManager } from './components/PhotoManager';
 import { PhotoViewer } from './components/PhotoViewer';
-import { Settings } from './components/Settings';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AppProvider, useAppContext } from './contexts/AppContext';
 
-function App() {
+function AppContent() {
   const {
-    photos,
     currentView,
-    currentPhotoIndex,
-    isLoading,
     error,
     isInstallable,
     isOffline,
     actions,
-  } = usePhotoWallet();
-
-  const handleAddPhotos = useCallback(async (files: File[]) => {
-    await actions.addPhotos(files);
-  }, [actions]);
-
-  const handlePhotoSelect = useCallback((index: number) => {
-    actions.setCurrentPhotoIndex(index);
-    actions.setCurrentView('viewer');
-  }, [actions]);
-
-  const handlePhotoDelete = useCallback((id: string) => {
-    actions.removePhoto(id);
-  }, [actions]);
-
-  const handleReorderPhotos = useCallback((fromIndex: number, toIndex: number) => {
-    actions.reorderPhotos(fromIndex, toIndex);
-  }, [actions]);
-
-  const handlePhotoChange = useCallback((index: number) => {
-    actions.setCurrentPhotoIndex(index);
-  }, [actions]);
-
-  const handleShowUploader = useCallback(() => {
-    actions.setCurrentView('uploader');
-  }, [actions]);
+  } = useAppContext();
 
   const handleShowSettings = useCallback(() => {
-    actions.setCurrentView('settings');
-  }, [actions]);
+    // Settings are now handled within PhotoManager
+    console.log('Settings triggered');
+  }, []);
 
-  const handleCloseSettings = useCallback(() => {
-    if (photos.length === 0) {
-      actions.setCurrentView('uploader');
-    } else {
-      actions.setCurrentView('manager');
-    }
-  }, [actions, photos.length]);
-
-  // Set up settings trigger for double-tap and lower screen tap
-  const { bindTouch, bindClick, temporarilyDisable } = useSettingsTrigger({
+  // Simplified settings trigger - just double-tap
+  const { bindDoubleTap } = useSettingsTrigger({
     onOpenSettings: handleShowSettings,
   });
-
-  const handleCloseViewer = useCallback(() => {
-    temporarilyDisable(1500); // Disable settings trigger for 1.5 seconds
-    actions.setCurrentView('manager');
-  }, [actions, temporarilyDisable]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -79,59 +39,17 @@ function App() {
     };
   }, [actions]);
 
-  useEffect(() => {
-    if (photos.length === 0) {
-      actions.setCurrentView('uploader');
-    } else if (currentView === 'uploader') {
-      actions.setCurrentView('manager');
-    }
-  }, [photos.length, currentView, actions]);
-
   const renderCurrentView = () => {
     switch (currentView) {
-      case 'uploader':
-        return (
-          <PhotoUploader
-            onPhotosSelected={handleAddPhotos}
-            currentPhotoCount={photos.length}
-            isLoading={isLoading}
-            errors={error ? [error] : []}
-          />
-        );
+      case 'setup':
+        return <PhotoUploader />;
 
-      case 'viewer':
-        return (
-          <PhotoViewer
-            photos={photos}
-            initialIndex={currentPhotoIndex}
-            onClose={handleCloseViewer}
-            onPhotoChange={handlePhotoChange}
-          />
-        );
+      case 'slide':
+        return <PhotoViewer />;
 
-      case 'settings':
-        return (
-          <Settings
-            photos={photos}
-            onClose={handleCloseSettings}
-            onAddPhotos={handleAddPhotos}
-            onRemovePhoto={handlePhotoDelete}
-            onReorderPhotos={handleReorderPhotos}
-            onClearAllPhotos={actions.clearAllPhotos}
-          />
-        );
-
-      case 'manager':
+      case 'home':
       default:
-        return (
-          <PhotoManager
-            photos={photos}
-            onPhotoSelect={handlePhotoSelect}
-            onPhotoDelete={handlePhotoDelete}
-            onReorderPhotos={handleReorderPhotos}
-            onAddPhotos={handleShowUploader}
-          />
-        );
+        return <PhotoManager />;
     }
   };
 
@@ -146,7 +64,7 @@ function App() {
         )}
 
         {/* Install Prompt */}
-        {isInstallable && currentView !== 'viewer' && (
+        {isInstallable && currentView !== 'slide' && (
           <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-center py-2 text-sm z-40">
             <button
               onClick={async () => {
@@ -175,13 +93,13 @@ function App() {
         {/* Main Content */}
         <div
           className={`w-full h-full ${isOffline || isInstallable ? 'pt-10' : ''}`}
-          {...(currentView === 'manager' ? { ...bindTouch, ...bindClick } : {})}
+          {...(currentView === 'home' ? bindDoubleTap : {})}
         >
           {renderCurrentView()}
         </div>
 
         {/* Error Toast */}
-        {error && currentView !== 'uploader' && (
+        {error && currentView !== 'setup' && currentView !== 'add' && (
           <div className="fixed bottom-4 left-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow-lg z-50">
             <div className="flex items-start justify-between">
               <div>
@@ -201,6 +119,36 @@ function App() {
         )}
       </div>
     </ErrorBoundary>
+  );
+}
+
+function App() {
+  const photoWallet = usePhotoWallet();
+
+  return (
+    <AppProvider value={{
+      currentView: photoWallet.currentView,
+      photos: photoWallet.photos,
+      currentPhotoIndex: photoWallet.currentPhotoIndex,
+      isLoading: photoWallet.isLoading,
+      error: photoWallet.error,
+      isInstallable: photoWallet.isInstallable,
+      isOffline: photoWallet.isOffline,
+      actions: {
+        goToSetup: photoWallet.actions.goToSetup,
+        goToHome: photoWallet.actions.goToHome,
+        goToSlide: photoWallet.actions.goToSlide,
+        setCurrentPhotoIndex: photoWallet.actions.setCurrentPhotoIndex,
+        clearError: photoWallet.actions.clearError,
+        setInstallable: photoWallet.actions.setInstallable,
+        addPhotos: photoWallet.actions.addPhotos,
+        removePhoto: photoWallet.actions.removePhoto,
+        reorderPhotos: photoWallet.actions.reorderPhotos,
+        clearAllPhotos: photoWallet.actions.clearAllPhotos,
+      },
+    }}>
+      <AppContent />
+    </AppProvider>
   );
 }
 

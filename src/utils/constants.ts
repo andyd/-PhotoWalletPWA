@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  MAX_PHOTOS: 10,
+  MAX_PHOTOS: 50,
   SUPPORTED_FORMATS: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'] as const,
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   DB_NAME: 'PhotoWalletDB',
@@ -29,7 +29,7 @@ export const UI_CONFIG = {
 export const ERROR_MESSAGES = {
   FILE_TYPE_NOT_SUPPORTED: 'File type not supported. Please select JPEG, PNG, or WebP images.',
   FILE_TOO_LARGE: 'File is too large. Maximum size is 50MB.',
-  STORAGE_LIMIT_REACHED: 'Cannot add more photos. Maximum of 10 photos allowed.',
+  STORAGE_LIMIT_REACHED: 'Cannot add more photos. Maximum of 50 photos allowed.',
   STORAGE_QUOTA_EXCEEDED: 'Storage quota exceeded. Please remove some photos.',
   PHOTO_LOAD_FAILED: 'Failed to load photo. Please try again.',
   INDEXEDDB_NOT_SUPPORTED: 'Your browser does not support offline storage.',

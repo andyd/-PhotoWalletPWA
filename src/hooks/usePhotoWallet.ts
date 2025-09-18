@@ -7,9 +7,9 @@ import { APP_CONFIG, ERROR_MESSAGES } from '../utils/constants';
 export const usePhotoWallet = () => {
   const [state, setState] = useState<AppState>({
     photos: [],
-    currentView: 'manager',
+    currentView: 'home', // Start with home, will be corrected after loading photos
     currentPhotoIndex: 0,
-    isLoading: false,
+    isLoading: true, // Start with loading true since we need to load photos
     error: null,
     isInstallable: false,
     isOffline: false,
@@ -19,15 +19,19 @@ export const usePhotoWallet = () => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       const photos = await photoStorageService.getAllPhotos();
+      const sortedPhotos = photos.sort((a, b) => a.order - b.order);
+      
       setState(prev => ({
         ...prev,
-        photos: photos.sort((a, b) => a.order - b.order),
+        photos: sortedPhotos,
+        currentView: sortedPhotos.length > 0 ? 'home' : 'setup',
         isLoading: false
       }));
     } catch (error) {
       setState(prev => ({
         ...prev,
         isLoading: false,
+        currentView: 'setup', // Default to setup on error
         error: {
           type: 'unknown',
           message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
@@ -97,13 +101,18 @@ export const usePhotoWallet = () => {
       }
 
       if (newPhotos.length > 0) {
-        setState(prev => ({
-          ...prev,
-          photos: [...prev.photos, ...newPhotos].sort((a, b) => a.order - b.order),
-          isLoading: false,
-          error: errors.length > 0 ? errors[0] : null,
-          currentView: 'manager',
-        }));
+        setState(prev => {
+          const newPhotosArray = [...prev.photos, ...newPhotos].sort((a, b) => a.order - b.order);
+          // Go to home if coming from setup, go to config if coming from add
+          const newView = prev.currentView === 'setup' ? 'home' : 'config';
+          return {
+            ...prev,
+            photos: newPhotosArray,
+            isLoading: false,
+            error: errors.length > 0 ? errors[0] : null,
+            currentView: newView,
+          };
+        });
       } else {
         setState(prev => ({
           ...prev,
@@ -176,7 +185,7 @@ export const usePhotoWallet = () => {
       setState(prev => ({
         ...prev,
         photos: [],
-        currentView: 'manager',
+        currentView: 'setup',
       }));
     } catch (error) {
       setState(prev => ({
@@ -189,8 +198,18 @@ export const usePhotoWallet = () => {
     }
   }, []);
 
-  const setCurrentView = useCallback((view: AppState['currentView']) => {
-    setState(prev => ({ ...prev, currentView: view }));
+  // Simplified navigation actions
+  const goToSetup = useCallback(() => {
+    setState(prev => ({ ...prev, currentView: 'setup' }));
+  }, []);
+
+  const goToHome = useCallback(() => {
+    setState(prev => ({ ...prev, currentView: 'home' }));
+  }, []);
+
+
+  const goToSlide = useCallback((index: number) => {
+    setState(prev => ({ ...prev, currentView: 'slide', currentPhotoIndex: index }));
   }, []);
 
   const setCurrentPhotoIndex = useCallback((index: number) => {
@@ -213,6 +232,14 @@ export const usePhotoWallet = () => {
     loadPhotos();
   }, [loadPhotos]);
 
+  // Auto-determine view based on photos (only after loading is complete)
+  // This handles cases where photos are cleared after initial load
+  useEffect(() => {
+    if (!state.isLoading && state.photos.length === 0 && state.currentView !== 'setup') {
+      setState(prev => ({ ...prev, currentView: 'setup' }));
+    }
+  }, [state.photos.length, state.currentView, state.isLoading]);
+
   useEffect(() => {
     const handleOnline = () => setOffline(false);
     const handleOffline = () => setOffline(true);
@@ -233,7 +260,9 @@ export const usePhotoWallet = () => {
     removePhoto,
     reorderPhotos,
     clearAllPhotos,
-    setCurrentView,
+    goToSetup,
+    goToHome,
+    goToSlide,
     setCurrentPhotoIndex,
     clearError,
     setInstallable,
@@ -243,7 +272,9 @@ export const usePhotoWallet = () => {
     removePhoto,
     reorderPhotos,
     clearAllPhotos,
-    setCurrentView,
+    goToSetup,
+    goToHome,
+    goToSlide,
     setCurrentPhotoIndex,
     clearError,
     setInstallable,

@@ -51,9 +51,11 @@ export interface PhotoUploadError {
   fileName?: string;
 }
 
+export type AppView = 'setup' | 'home' | 'config' | 'add' | 'slide';
+
 export interface AppState {
   photos: Photo[];
-  currentView: 'manager' | 'viewer' | 'uploader' | 'settings';
+  currentView: AppView;
   currentPhotoIndex: number;
   isLoading: boolean;
   error: PhotoUploadError | null;

@@ -2,28 +2,15 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Photo } from '../types';
 import { createObjectURL, revokeObjectURL } from '../utils/imageProcessing';
 import { FileHandler } from '../services/fileHandler';
-
-interface SettingsProps {
-  photos: Photo[];
-  onClose: () => void;
-  onAddPhotos: (files: File[]) => Promise<void>;
-  onRemovePhoto: (id: string) => void;
-  onReorderPhotos: (fromIndex: number, toIndex: number) => void;
-  onClearAllPhotos: () => void;
-}
+import { useAppContext } from '../contexts/AppContext';
+import { APP_CONFIG } from '../utils/constants';
 
 interface PhotoWithURL extends Photo {
   objectURL: string;
 }
 
-export const Settings: React.FC<SettingsProps> = ({
-  photos,
-  onClose,
-  onAddPhotos,
-  onRemovePhoto,
-  onReorderPhotos,
-  onClearAllPhotos,
-}) => {
+export const Settings: React.FC = () => {
+  const { photos, actions } = useAppContext();
   const [photosWithURLs, setPhotosWithURLs] = useState<PhotoWithURL[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -57,7 +44,7 @@ export const Settings: React.FC<SettingsProps> = ({
       try {
         const { validFiles } = FileHandler.validateFiles(files);
         if (validFiles.length > 0) {
-          await onAddPhotos(validFiles);
+          await actions.addPhotos(validFiles);
         }
       } catch (error) {
         console.error('Error adding photos:', error);
@@ -69,7 +56,7 @@ export const Settings: React.FC<SettingsProps> = ({
     if (event.target) {
       event.target.value = '';
     }
-  }, [onAddPhotos]);
+  }, [actions]);
 
   const handlePhotoSelect = useCallback((photoId: string) => {
     setSelectedPhotos(prev => {
@@ -93,10 +80,10 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const handleDeleteSelected = useCallback(() => {
     selectedPhotos.forEach(photoId => {
-      onRemovePhoto(photoId);
+      actions.removePhoto(photoId);
     });
     setSelectedPhotos(new Set());
-  }, [selectedPhotos, onRemovePhoto]);
+  }, [selectedPhotos, actions]);
 
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -113,16 +100,15 @@ export const Settings: React.FC<SettingsProps> = ({
     e.preventDefault();
 
     if (draggedIndex !== null && draggedIndex !== dropIndex) {
-      onReorderPhotos(draggedIndex, dropIndex);
+      actions.reorderPhotos(draggedIndex, dropIndex);
     }
     setDraggedIndex(null);
-  }, [draggedIndex, onReorderPhotos]);
+  }, [draggedIndex, actions]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
   }, []);
 
-  const remainingSlots = 10 - photos.length;
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -141,7 +127,7 @@ export const Settings: React.FC<SettingsProps> = ({
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         <h2 className="text-xl font-bold text-white">Settings</h2>
         <button
-          onClick={onClose}
+          onClick={() => actions.goToHome()}
           className="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors"
         >
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,22 +139,19 @@ export const Settings: React.FC<SettingsProps> = ({
       {/* Photo count and controls */}
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-white text-lg">
-            {photos.length} of 10 photos
-          </span>
           <div className="flex gap-2">
             <button
               onClick={handleFileSelect}
-              disabled={photos.length >= 10 || isUploading}
+              disabled={photos.length >= APP_CONFIG.MAX_PHOTOS || isUploading}
               className={`
                 px-4 py-2 rounded-lg font-medium transition-colors
-                ${photos.length >= 10 || isUploading
+                ${photos.length >= APP_CONFIG.MAX_PHOTOS || isUploading
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }
               `}
             >
-              {isUploading ? 'Adding...' : `Add Photos${remainingSlots > 0 ? ` (${remainingSlots} left)` : ''}`}
+              {isUploading ? 'Adding...' : 'Add Photos'}
             </button>
           </div>
         </div>
@@ -314,7 +297,7 @@ export const Settings: React.FC<SettingsProps> = ({
               </button>
               <button
                 onClick={() => {
-                  onClearAllPhotos();
+                  actions.clearAllPhotos();
                   setShowClearConfirm(false);
                   setSelectedPhotos(new Set());
                 }}
