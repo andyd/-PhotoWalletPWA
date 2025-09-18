@@ -103,14 +103,13 @@ export const usePhotoWallet = () => {
       if (newPhotos.length > 0) {
         setState(prev => {
           const newPhotosArray = [...prev.photos, ...newPhotos].sort((a, b) => a.order - b.order);
-          // Go to home if coming from setup, go to config if coming from add
-          const newView = prev.currentView === 'setup' ? 'home' : 'config';
+          // Always go to home after adding photos, regardless of current view
           return {
             ...prev,
             photos: newPhotosArray,
             isLoading: false,
             error: errors.length > 0 ? errors[0] : null,
-            currentView: newView,
+            currentView: 'home',
           };
         });
       } else {
