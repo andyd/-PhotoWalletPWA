@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Photo Wallet Image Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .step h3 { margin-top: 0; color: #333; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .info { background: #e7f3ff; color: #0066cc; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        img { max-width: 150px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Photo Wallet Debug Test</h1>
+        
+        <div class="step">
+            <h3>Step 1: Open Photo Wallet App</h3>
+            <p>Click the button below to open the Photo Wallet app in a new tab:</p>
+            <button onclick="openPhotoWallet()">Open Photo Wallet</button>
+            <div id="step1-status" class="status info">Ready to open Photo Wallet...</div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Create Test Images</h3>
+            <p>Click the button below to create test images for uploading:</p>
+            <button onclick="createTestImages()">Create Test Images</button>
+            <div id="step2-status" class="status info">Ready to create test images...</div>
+            <div id="test-images" class="photo-grid"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Test Upload Process</h3>
+            <p>Follow these steps to test the upload:</p>
+            <ol>
+                <li>Go to the Photo Wallet app (opened in Step 1)</li>
+                <li>Click "Add Photos" button</li>
+                <li>Select the test images created in Step 2</li>
+                <li>Watch the browser console for debug messages</li>
+                <li>Check if images appear immediately or just show file names</li>
+            </ol>
+            <div id="step3-status" class="status info">Ready to test upload...</div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Debug Information</h3>
+            <p>Check the browser console (F12) for debug messages:</p>
+            <ul>
+                <li>PhotoManager: Creating URLs for photos</li>
+                <li>Photo details (id, name, blob type, size)</li>
+                <li>Image load success/failure messages</li>
+            </ul>
+            <button onclick="clearDebugInfo()">Clear Debug Info</button>
+            <div id="debug-info" class="status info">Debug information will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let testFiles = [];
+        let photoWalletWindow = null;
+        
+        function openPhotoWallet() {
+            const status = document.getElementById('step1-status');
+            status.textContent = 'Opening Photo Wallet app...';
+            status.className = 'status info';
+            
+            try {
+                photoWalletWindow = window.open('http://localhost:5173/-PhotoWalletPWA/', '_blank');
+                
+                setTimeout(() => {
+                    if (photoWalletWindow && !photoWalletWindow.closed) {
+                        status.textContent = '✅ Photo Wallet app opened successfully! Check the new tab.';
+                        status.className = 'status success';
+                    } else {
+                        status.textContent = '❌ Failed to open Photo Wallet app';
+                        status.className = 'status error';
+                    }
+                }, 1000);
+            } catch (error) {
+                status.textContent = `❌ Error opening app: ${error.message}`;
+                status.className = 'status error';
+            }
+        }
+        
+        function createTestImages() {
+            const status = document.getElementById('step2-status');
+            const imagesDiv = document.getElementById('test-images');
+            imagesDiv.innerHTML = '';
+            testFiles = [];
+            
+            status.textContent = 'Creating test images...';
+            status.className = 'status info';
+            
+            const testData = [
+                { name: 'sunset.jpg', color: '#FF6B6B', text: 'Sunset' },
+                { name: 'ocean.jpg', color: '#4ECDC4', text: 'Ocean' },
+                { name: 'mountain.jpg', color: '#45B7D1', text: 'Mountain' }
+            ];
+            
+            let completed = 0;
+            
+            testData.forEach((data, index) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 400;
+                canvas.height = 300;
+                const ctx = canvas.getContext('2d');
+                
+                // Create gradient background
+                const gradient = ctx.createLinearGradient(0, 0, 400, 300);
+                gradient.addColorStop(0, data.color);
+                gradient.addColorStop(1, adjustColor(data.color, -30));
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 400, 300);
+                
+                // Add some pattern
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                for (let i = 0; i < 20; i++) {
+                    ctx.fillRect(Math.random() * 400, Math.random() * 300, 8, 8);
+                }
+                
+                // Add text
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 3;
+                ctx.fillText(data.text, 200, 150);
+                
+                // Add file name
+                ctx.font = '16px Arial';
+                ctx.fillText(data.name, 200, 180);
+                
+                // Convert to blob and create file
+                canvas.toBlob((blob) => {
+                    const file = new File([blob], data.name, { type: 'image/jpeg' });
+                    testFiles.push(file);
+                    
+                    // Show preview
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    img.title = `${data.name} (${Math.round(blob.size / 1024)}KB)`;
+                    imagesDiv.appendChild(img);
+                    
+                    completed++;
+                    status.textContent = `Created ${completed}/${testData.length} test images`;
+                    
+                    if (completed === testData.length) {
+                        status.textContent = `✅ All ${testData.length} test images created! Use these files to test the Photo Wallet app.`;
+                        status.className = 'status success';
+                        
+                        // Auto-download the files
+                        testFiles.forEach((file, index) => {
+                            setTimeout(() => {
+                                const url = URL.createObjectURL(file);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = file.name;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            }, index * 200);
+                        });
+                    }
+                }, 'image/jpeg', 0.9);
+            });
+        }
+        
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * amount);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+        
+        function clearDebugInfo() {
+            document.getElementById('debug-info').textContent = 'Debug information cleared. Check browser console (F12) for real-time debug messages.';
+        }
+        
+        // Auto-open Photo Wallet on page load
+        window.onload = function() {
+            setTimeout(openPhotoWallet, 500);
+        };
+    </script>
+</body>
+</html>

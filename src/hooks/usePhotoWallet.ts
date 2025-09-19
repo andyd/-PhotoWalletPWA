@@ -103,6 +103,12 @@ export const usePhotoWallet = () => {
       if (newPhotos.length > 0) {
         setState(prev => {
           const newPhotosArray = [...prev.photos, ...newPhotos].sort((a, b) => a.order - b.order);
+          console.log('usePhotoWallet: Updating state with new photos:', {
+            previousCount: prev.photos.length,
+            newCount: newPhotosArray.length,
+            newPhotos: newPhotos.map(p => ({ id: p.id, name: p.originalName, hasBlob: !!p.blob }))
+          });
+          
           // Always go to home after adding photos, regardless of current view
           return {
             ...prev,

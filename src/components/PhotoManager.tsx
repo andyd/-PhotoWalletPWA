@@ -18,17 +18,29 @@ export const PhotoManager: React.FC = () => {
 
 
   const photoURLs = useMemo(() => {
-    return photos.map(photo => ({
-      ...photo,
-      objectURL: createObjectURL(photo.blob),
-    }));
+    console.log('PhotoManager: Creating URLs for photos:', photos.length);
+    return photos.map((photo, index) => {
+      console.log(`Photo ${index}:`, {
+        id: photo.id,
+        originalName: photo.originalName,
+        blobType: photo.blob.type,
+        blobSize: photo.blob.size,
+        hasBlob: !!photo.blob
+      });
+      return {
+        ...photo,
+        objectURL: createObjectURL(photo.blob),
+      };
+    });
   }, [photos]);
 
   useEffect(() => {
+    console.log('PhotoManager: useEffect triggered, updating photos with URLs');
     setPhotosWithURLs(photoURLs);
 
     // Cleanup previous URLs when photos change
     return () => {
+      console.log('PhotoManager: Cleaning up URLs');
       photoURLs.forEach(photo => {
         try {
           revokeObjectURL(photo.objectURL);
@@ -174,7 +186,7 @@ export const PhotoManager: React.FC = () => {
       />
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div key={`photo-grid-${photos.length}`} className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {photosWithURLs.map((photo, index) => (
             <div
               key={photo.id}
@@ -195,6 +207,8 @@ export const PhotoManager: React.FC = () => {
                 alt={photo.originalName}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onLoad={() => console.log(`Image loaded successfully: ${photo.originalName}`)}
+                onError={(e) => console.error(`Image failed to load: ${photo.originalName}`, e)}
               />
 
               {/* Delete button - only visible on hover */}

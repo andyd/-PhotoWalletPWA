@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Image Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .status { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 3px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        img { max-width: 200px; margin: 10px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Photo Wallet Image Loading Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Create Test Images</h2>
+        <button onclick="createTestImages()">Create 3 Test Images</button>
+        <div id="status1" class="status">Ready to create test images...</div>
+        <div id="images1"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Check App State</h2>
+        <button onclick="checkAppState()">Check Photo Wallet App</button>
+        <div id="status2" class="status">Ready to check app state...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Simulate Upload</h2>
+        <button onclick="simulateUpload()">Simulate Photo Upload</button>
+        <div id="status3" class="status">Ready to simulate upload...</div>
+    </div>
+
+    <script>
+        let testFiles = [];
+        
+        function createTestImages() {
+            const status = document.getElementById('status1');
+            const imagesDiv = document.getElementById('images1');
+            imagesDiv.innerHTML = '';
+            testFiles = [];
+            
+            status.textContent = 'Creating test images...';
+            status.className = 'status';
+            
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1'];
+            const names = ['Test Image 1', 'Test Image 2', 'Test Image 3'];
+            
+            let completed = 0;
+            
+            colors.forEach((color, index) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 300;
+                canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw background
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 300, 200);
+                
+                // Add text
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(names[index], 150, 100);
+                
+                // Convert to blob and create file
+                canvas.toBlob((blob) => {
+                    const file = new File([blob], `test-${index + 1}.png`, { type: 'image/png' });
+                    testFiles.push(file);
+                    
+                    // Show preview
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    img.title = file.name;
+                    imagesDiv.appendChild(img);
+                    
+                    completed++;
+                    status.textContent = `Created ${completed}/${colors.length} test images`;
+                    
+                    if (completed === colors.length) {
+                        status.textContent = '✅ All test images created successfully!';
+                        status.className = 'status success';
+                    }
+                }, 'image/png');
+            });
+        }
+        
+        function checkAppState() {
+            const status = document.getElementById('status2');
+            status.textContent = 'Checking Photo Wallet app state...';
+            status.className = 'status';
+            
+            // Open the app in a new window
+            const appWindow = window.open('http://localhost:5173/-PhotoWalletPWA/', '_blank');
+            
+            setTimeout(() => {
+                if (appWindow && !appWindow.closed) {
+                    status.textContent = '✅ Photo Wallet app opened successfully!';
+                    status.className = 'status success';
+                } else {
+                    status.textContent = '❌ Failed to open Photo Wallet app';
+                    status.className = 'status error';
+                }
+            }, 1000);
+        }
+        
+        function simulateUpload() {
+            const status = document.getElementById('status3');
+            
+            if (testFiles.length === 0) {
+                status.textContent = '❌ Please create test images first!';
+                status.className = 'status error';
+                return;
+            }
+            
+            status.textContent = 'Simulating photo upload...';
+            status.className = 'status';
+            
+            // Try to interact with the Photo Wallet app
+            try {
+                // This would need to be run in the context of the Photo Wallet app
+                status.textContent = '📝 Instructions: 1. Go to Photo Wallet app 2. Click "Add Photos" 3. Select the test images 4. Check if images appear immediately';
+                status.className = 'status';
+            } catch (error) {
+                status.textContent = `❌ Error: ${error.message}`;
+                status.className = 'status error';
+            }
+        }
+        
+        // Auto-create test images on load
+        window.onload = function() {
+            setTimeout(createTestImages, 500);
+        };
+    </script>
+</body>
+</html>
