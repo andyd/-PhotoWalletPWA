@@ -1,155 +1,123 @@
-import { useEffect, useCallback } from 'react';
-import { usePhotoWallet } from './hooks/usePhotoWallet';
-import { useSettingsTrigger } from './hooks/useSettingsTrigger';
-import { PhotoUploader } from './components/PhotoUploader';
-import { PhotoManager } from './components/PhotoManager';
-import { PhotoViewer } from './components/PhotoViewer';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { AppProvider, useAppContext } from './contexts/AppContext';
+import React, { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { usePhotoStore } from './stores/photoStore';
+import { useUIStore } from './stores/uiStore';
+import { useSettingsStore } from './stores/settingsStore';
+import { PhotoManager } from './components/PhotoManager/PhotoGrid';
+import { PhotoViewer } from './components/PhotoViewer/PhotoViewer';
+import { PhotoUploader } from './components/PhotoManager/PhotoUploader';
+import { ErrorBoundary } from './components/UI/ErrorBoundary';
+import { Toast } from './components/UI/Toast';
+import { LoadingSpinner } from './components/UI/LoadingSpinner';
+import './App.css';
 
-function AppContent() {
-  const {
-    currentView,
-    error,
-    isInstallable,
-    isOffline,
-    actions,
-  } = useAppContext();
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (renamed from cacheTime)
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-  const handleShowSettings = useCallback(() => {
-    // Settings are now handled within PhotoManager
-    console.log('Settings triggered');
-  }, []);
+const AppContent: React.FC = () => {
+  const { currentView, isInitialized, initialize, toasts, setCurrentView } = useUIStore();
+  const { isLoading: photosLoading, loadPhotos, hasPhotos } = usePhotoStore();
+  const { loadSettings, isLoading: settingsLoading } = useSettingsStore();
 
-  // Simplified settings trigger - just double-tap
-  const { bindDoubleTap } = useSettingsTrigger({
-    onOpenSettings: handleShowSettings,
-  });
+  const isLoading = photosLoading || settingsLoading || !isInitialized;
 
+  // Initialize the app
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      actions.setInstallable(true);
+    const initializeApp = async () => {
+      await Promise.all([
+        initialize(),
+        loadSettings(),
+        loadPhotos(),
+      ]);
+
+      // Determine initial view based on photos
+      const hasPhotosAvailable = await hasPhotos();
+      if (hasPhotosAvailable) {
+        setCurrentView('manager');
+      } else {
+        setCurrentView('welcome');
+      }
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    initializeApp();
+  }, [initialize, loadSettings, loadPhotos, hasPhotos, setCurrentView]);
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, [actions]);
+  // Show loading screen during initialization
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
 
   const renderCurrentView = () => {
     switch (currentView) {
-      case 'setup':
+      case 'welcome':
         return <PhotoUploader />;
 
-      case 'slide':
+      case 'manager':
+        return <PhotoManager />;
+
+      case 'viewer':
         return <PhotoViewer />;
 
-      case 'home':
       default:
-        return <PhotoManager />;
+        return <PhotoUploader />;
     }
   };
 
   return (
-    <ErrorBoundary>
-      <div className="w-full h-full bg-black text-white overflow-hidden select-none">
-        {/* Offline Indicator */}
-        {isOffline && (
-          <div className="absolute top-0 left-0 right-0 bg-yellow-600 text-black text-center py-2 text-sm font-medium z-40">
-            You're offline. The app will continue to work normally.
-          </div>
-        )}
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      <ErrorBoundary>
+        {/* Main content with view transitions */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="min-h-screen"
+          >
+            {renderCurrentView()}
+          </motion.div>
+        </AnimatePresence>
 
-        {/* Install Prompt */}
-        {isInstallable && currentView !== 'slide' && (
-          <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-center py-2 text-sm z-40">
-            <button
-              onClick={async () => {
-                const event = (window as any).deferredPrompt;
-                if (event) {
-                  event.prompt();
-                  const { outcome } = await event.userChoice;
-                  if (outcome === 'accepted') {
-                    actions.setInstallable(false);
-                  }
-                }
-              }}
-              className="underline hover:no-underline"
-            >
-              Install Photo Wallet for a better experience
-            </button>
-            <button
-              onClick={() => actions.setInstallable(false)}
-              className="ml-4 text-blue-200 hover:text-white"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div
-          className={`w-full h-full ${isOffline || isInstallable ? 'pt-10' : ''}`}
-          {...(currentView === 'home' ? bindDoubleTap : {})}
-        >
-          {renderCurrentView()}
+        {/* Toast notifications */}
+        <div className="fixed bottom-4 left-4 right-4 z-50 space-y-2">
+          <AnimatePresence>
+            {toasts.map((toast) => (
+              <Toast
+                key={toast.id}
+                id={toast.id}
+                message={toast.message}
+                type={toast.type}
+              />
+            ))}
+          </AnimatePresence>
         </div>
-
-        {/* Error Toast */}
-        {error && currentView !== 'setup' && currentView !== 'add' && (
-          <div className="fixed bottom-4 left-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow-lg z-50">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium">{error.message}</p>
-                {error.fileName && (
-                  <p className="text-sm text-red-200 mt-1">File: {error.fileName}</p>
-                )}
-              </div>
-              <button
-                onClick={actions.clearError}
-                className="ml-4 text-red-200 hover:text-white"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </div>
   );
-}
+};
 
-function App() {
-  const photoWallet = usePhotoWallet();
-
+const App: React.FC = () => {
   return (
-    <AppProvider value={{
-      currentView: photoWallet.currentView,
-      photos: photoWallet.photos,
-      currentPhotoIndex: photoWallet.currentPhotoIndex,
-      isLoading: photoWallet.isLoading,
-      error: photoWallet.error,
-      isInstallable: photoWallet.isInstallable,
-      isOffline: photoWallet.isOffline,
-      actions: {
-        goToSetup: photoWallet.actions.goToSetup,
-        goToHome: photoWallet.actions.goToHome,
-        goToSlide: photoWallet.actions.goToSlide,
-        setCurrentPhotoIndex: photoWallet.actions.setCurrentPhotoIndex,
-        clearError: photoWallet.actions.clearError,
-        setInstallable: photoWallet.actions.setInstallable,
-        addPhotos: photoWallet.actions.addPhotos,
-        removePhoto: photoWallet.actions.removePhoto,
-        reorderPhotos: photoWallet.actions.reorderPhotos,
-        clearAllPhotos: photoWallet.actions.clearAllPhotos,
-      },
-    }}>
+    <QueryClientProvider client={queryClient}>
       <AppContent />
-    </AppProvider>
+    </QueryClientProvider>
   );
-}
+};
 
 export default App;

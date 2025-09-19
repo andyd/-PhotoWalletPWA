@@ -1,37 +1,93 @@
 export const APP_CONFIG = {
-  MAX_PHOTOS: 50,
-  SUPPORTED_FORMATS: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'] as const,
+  MAX_PHOTOS: 10,
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
-  DB_NAME: 'PhotoWalletDB',
-  DB_VERSION: 1,
-  STORE_NAME: 'photos',
+  MAX_ZOOM_LEVEL: 3,
+  MIN_ZOOM_LEVEL: 0.5,
+  GESTURE_THRESHOLD: 10,
+  ANIMATION_DURATION: 300,
+  AUTO_HIDE_CONTROLS_DELAY: 3000,
+  STORAGE_QUOTA_WARNING: 0.8, // 80%
+} as const;
+
+export const SUPPORTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+] as const;
+
+export const SUPPORTED_FILE_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.heic',
+  '.heif',
+] as const;
+
+export const ERROR_MESSAGES = {
+  FILE_TOO_LARGE: 'File size exceeds 50MB limit',
+  UNSUPPORTED_FORMAT: 'Unsupported image format',
+  STORAGE_LIMIT_REACHED: 'Maximum of 10 photos allowed',
+  STORAGE_QUOTA_EXCEEDED: 'Device storage limit reached',
+  NETWORK_ERROR: 'Network connection required',
+  PERMISSION_DENIED: 'File access permission denied',
+  PROCESSING_ERROR: 'Error processing image',
+  UNKNOWN_ERROR: 'An unexpected error occurred',
+  DATABASE_ERROR: 'Database operation failed',
+  IMPORT_ERROR: 'Failed to import photo',
+  EXPORT_ERROR: 'Failed to export data',
 } as const;
 
 export const GESTURE_CONFIG = {
   SWIPE_THRESHOLD: 50,
   SWIPE_VELOCITY_THRESHOLD: 0.3,
-  ZOOM_MIN: 0.5,
-  ZOOM_MAX: 5,
-  DOUBLE_TAP_THRESHOLD: 300,
+  PINCH_THRESHOLD: 0.1,
+  DOUBLE_TAP_DELAY: 300,
+  LONG_PRESS_DELAY: 500,
   MOMENTUM_DAMPING: 0.95,
-  SPRING_CONFIG: {
+} as const;
+
+export const PWA_CONFIG = {
+  THEME_COLOR: '#000000',
+  BACKGROUND_COLOR: '#000000',
+  DISPLAY: 'standalone',
+  ORIENTATION: 'portrait',
+  SCOPE: '/',
+  START_URL: '/',
+} as const;
+
+export const ANIMATION_CONFIG = {
+  SPRING: {
     tension: 300,
     friction: 30,
   },
+  EASING: {
+    ease: [0.4, 0, 0.2, 1],
+    easeInOut: [0.4, 0, 0.6, 1],
+    easeOut: [0, 0, 0.2, 1],
+  },
+  DURATION: {
+    fast: 150,
+    normal: 300,
+    slow: 500,
+  },
 } as const;
 
-export const UI_CONFIG = {
-  ANIMATION_DURATION: 300,
-  TRANSITION_EASING: 'cubic-bezier(0.4, 0, 0.2, 1)',
-  SAFE_AREA_PADDING: 'env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)',
+export const STORAGE_KEYS = {
+  PHOTOS: 'photos',
+  SETTINGS: 'settings',
+  METADATA: 'metadata',
+  CACHE: 'cache',
 } as const;
 
-export const ERROR_MESSAGES = {
-  FILE_TYPE_NOT_SUPPORTED: 'File type not supported. Please select JPEG, PNG, or WebP images.',
-  FILE_TOO_LARGE: 'File is too large. Maximum size is 50MB.',
-  STORAGE_LIMIT_REACHED: 'Cannot add more photos. Maximum of 50 photos allowed.',
-  STORAGE_QUOTA_EXCEEDED: 'Storage quota exceeded. Please remove some photos.',
-  PHOTO_LOAD_FAILED: 'Failed to load photo. Please try again.',
-  INDEXEDDB_NOT_SUPPORTED: 'Your browser does not support offline storage.',
-  UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
+export const DEFAULT_SETTINGS = {
+  theme: 'dark' as const,
+  gesturesSensitivity: 'medium' as const,
+  zoomBehavior: 'smooth' as const,
+  autoRotate: false,
+  showTutorial: true,
+  maxZoomLevel: APP_CONFIG.MAX_ZOOM_LEVEL,
 } as const;
