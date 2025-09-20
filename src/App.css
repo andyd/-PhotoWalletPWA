@@ -38,6 +38,44 @@
   --overlay-dark: rgba(0, 0, 0, 0.8);
   --overlay-medium: rgba(0, 0, 0, 0.6);
   --overlay-light: rgba(0, 0, 0, 0.3);
+}
+
+/* Settings button aligned with title in header */
+button[title="Settings"] {
+  margin-left: auto !important;
+  align-self: center !important;
+  vertical-align: middle !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ensure header flex container centers items properly */
+.flex.items-center.justify-between {
+  align-items: center !important;
+  display: flex !important;
+}
+
+/* Target the specific header divs */
+div.flex.items-center.justify-between.px-6.py-6.border-b {
+  align-items: center !important;
+  display: flex !important;
+}
+
+/* Fix button styling in settings screen */
+.motion-button, button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Ensure proper button sizing */
+button[title="Back to Photos"], 
+button:has-text("Reset App") {
+  min-height: 48px !important;
+  min-width: 48px !important;
+}
   
   /* Legacy compatibility */
   --color-good: #0080ff;
@@ -109,6 +147,8 @@ body {
   min-height: 0;
   flex: 1;
   box-sizing: border-box;
+  height: calc(100vh - 120px);
+  max-height: calc(100vh - 120px);
 }
 
 .photo-thumbnail {

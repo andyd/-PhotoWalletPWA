@@ -1,33 +1,85 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Simple in-memory stores (no persistence for now)
+// Simple in-memory stores with localStorage persistence
 let photos: Array<{id: string, name: string, data: string}> = [];
 let currentView = 'welcome';
+
+// Load state from localStorage on startup
+const loadState = () => {
+  try {
+    const savedPhotos = localStorage.getItem('photoWallet_photos');
+    const savedView = localStorage.getItem('photoWallet_currentView');
+    
+    if (savedPhotos) {
+      photos = JSON.parse(savedPhotos);
+    }
+    
+    // If we have photos, always go to photos view regardless of saved view
+    if (photos.length > 0) {
+      currentView = 'photos';
+    } else if (savedView) {
+      currentView = savedView;
+    }
+  } catch (error) {
+    console.log('Could not load saved state:', error);
+  }
+};
+
+// Save state to localStorage
+const saveState = () => {
+  try {
+    localStorage.setItem('photoWallet_photos', JSON.stringify(photos));
+    localStorage.setItem('photoWallet_currentView', currentView);
+  } catch (error) {
+    console.log('Could not save state:', error);
+  }
+};
+
+// Load state immediately
+loadState();
 
 // Simple store functions
 const addPhoto = (file: File) => {
   const reader = new FileReader();
   reader.onload = (e) => {
-    photos.push({
-      id: Date.now().toString(),
-      name: file.name,
-      data: e.target?.result as string
-    });
-    currentView = 'photos';
-    // Trigger re-render
-    window.dispatchEvent(new Event('state-change'));
+    const result = e.target?.result as string;
+    if (result) {
+      photos.push({
+        id: Date.now().toString() + Math.random(),
+        name: file.name,
+        data: result
+      });
+      currentView = 'photos';
+      saveState();
+      console.log('Photo added, current view:', currentView, 'photos count:', photos.length);
+      // Trigger re-render
+      window.dispatchEvent(new Event('state-change'));
+    }
+  };
+  reader.onerror = () => {
+    console.error('Error reading file:', file.name);
   };
   reader.readAsDataURL(file);
 };
 
 const removePhoto = (id: string) => {
   photos = photos.filter(p => p.id !== id);
+  saveState();
   window.dispatchEvent(new Event('state-change'));
 };
 
 const setView = (view: string) => {
   currentView = view;
+  saveState();
+  window.dispatchEvent(new Event('state-change'));
+};
+
+const clearAllData = () => {
+  photos = [];
+  currentView = 'welcome';
+  localStorage.removeItem('photoWallet_photos');
+  localStorage.removeItem('photoWallet_currentView');
   window.dispatchEvent(new Event('state-change'));
 };
 
@@ -120,8 +172,6 @@ const WelcomeScreen = () => {
 
 // Photos Screen
 const PhotosScreen = () => {
-  const [showReset, setShowReset] = React.useState(false);
-
   const handleViewPhoto = (index: number) => {
     // Set the current photo index before switching to viewer
     (window as any).currentPhotoIndex = index;
@@ -132,25 +182,20 @@ const PhotosScreen = () => {
     removePhoto(id);
   };
 
-  const handleReset = () => {
-    photos = [];
-    setView('welcome');
-    setShowReset(false);
-  };
-
   if (photos.length === 0) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images (0)</h1>
+          <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Photos (0)</h1>
+          
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowReset(true)}
+            onClick={() => setView('settings')}
             className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
             style={{ backgroundColor: 'var(--bg-secondary)' }}
-            title="Settings & Reset"
+            title="Settings"
           >
             <span className="text-lg" style={{ color: 'var(--text-primary)' }}>⚙️</span>
           </motion.button>
@@ -204,49 +249,6 @@ const PhotosScreen = () => {
           </motion.div>
         </div>
 
-        {/* Reset Modal */}
-        {showReset && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
-            style={{ backgroundColor: 'var(--overlay-dark)' }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="card-elevated rounded-3xl p-8 max-w-sm w-full"
-            >
-              <div className="text-center space-y-6">
-                <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Reset App</h3>
-                <p className="text-body" style={{ color: 'var(--text-secondary)' }}>
-                  This will reset the app to its initial state.
-                </p>
-                <div className="flex space-x-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowReset(false)}
-                    className="flex-1 btn-secondary px-4 py-3 rounded-xl"
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleReset}
-                    className="flex-1 px-4 py-3 rounded-xl text-white"
-                    style={{ backgroundColor: 'var(--error-color)' }}
-                  >
-                    Reset
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
       </div>
     );
   }
@@ -255,24 +257,18 @@ const PhotosScreen = () => {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-        <div className="flex items-center space-x-4">
-          <div>
-            <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images ({photos.length})</h1>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowReset(true)}
-            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-            title="Settings & Reset"
-          >
-            <span className="text-lg" style={{ color: 'var(--text-primary)' }}>⚙️</span>
-          </motion.button>
-        </div>
+        <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Photos ({photos.length})</h1>
+        
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setView('settings')}
+          className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+          style={{ backgroundColor: 'var(--bg-secondary)' }}
+          title="Settings"
+        >
+          <span className="text-lg" style={{ color: 'var(--text-primary)' }}>⚙️</span>
+        </motion.button>
       </div>
 
       {/* Photo Grid */}
@@ -319,62 +315,164 @@ const PhotosScreen = () => {
         </div>
       </div>
 
-      {/* Reset Modal */}
-      {showReset && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ backgroundColor: 'var(--overlay-dark)' }}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="card-elevated rounded-3xl p-8 max-w-sm w-full"
-          >
-            <div className="text-center space-y-6">
-              <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Reset App</h3>
-              <p className="text-body" style={{ color: 'var(--text-secondary)' }}>
-                This will delete all {photos.length} photos and reset the app.
-              </p>
-              <div className="flex space-x-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowReset(false)}
-                  className="flex-1 btn-secondary px-4 py-3 rounded-xl"
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleReset}
-                  className="flex-1 px-4 py-3 rounded-xl text-white"
-                  style={{ backgroundColor: 'var(--error-color)' }}
-                >
-                  Reset
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 };
 
-// Photo Viewer
+// Settings Screen
+const SettingsScreen = () => {
+  const handleResetApp = () => {
+    clearAllData();
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+        <div className="flex items-center space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setView('photos')}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+            style={{ 
+              backgroundColor: 'var(--bg-secondary)',
+              minHeight: '48px',
+              minWidth: '48px'
+            }}
+            title="Back to Photos"
+          >
+            <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>←</span>
+          </motion.button>
+          <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>Settings</h1>
+        </div>
+      </div>
+
+      {/* Settings Content */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="max-w-lg mx-auto space-y-8">
+          {/* App Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-4"
+          >
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <span className="text-4xl">📷</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Photo Wallet</h2>
+              <p className="text-body" style={{ color: 'var(--text-secondary)' }}>Your important photos at your fingertips</p>
+            </div>
+          </motion.div>
+
+          {/* Photo Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="card rounded-2xl p-6"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Your Photos</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-body" style={{ color: 'var(--text-secondary)' }}>Total Photos</span>
+                <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{photos.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-body" style={{ color: 'var(--text-secondary)' }}>Storage Used</span>
+                <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Local</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Reset Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="card rounded-2xl p-6"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Reset App</h3>
+            <p className="text-body mb-6" style={{ color: 'var(--text-secondary)' }}>
+              This will delete all {photos.length} photos and reset the app to its initial state. This action cannot be undone.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleResetApp}
+              className="w-full px-6 py-4 rounded-xl text-white font-semibold flex items-center justify-center"
+              style={{ 
+                backgroundColor: 'var(--error-color)',
+                minHeight: '48px',
+                fontSize: '16px',
+                lineHeight: '1.5'
+              }}
+            >
+              Reset App
+            </motion.button>
+          </motion.div>
+
+          {/* Privacy Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-center space-y-4"
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <span className="text-2xl">🔒</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Privacy First</h3>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Your photos are stored locally on your device and never leave your phone.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Photo Viewer - Clean image display with invisible navigation
 const PhotoViewer = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  const goPrevious = () => setCurrentIndex(currentIndex === 0 ? photos.length - 1 : currentIndex - 1);
+  const goNext = () => setCurrentIndex(currentIndex === photos.length - 1 ? 0 : currentIndex + 1);
+  const goBack = () => setView('photos');
 
   React.useEffect(() => {
     // Set to the selected photo index or 0 if not set
     const selectedIndex = (window as any).currentPhotoIndex || 0;
     setCurrentIndex(selectedIndex);
-  }, []);
+
+    // Add keyboard event listeners for navigation
+    const handleKeyPress = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          setView('photos');
+          break;
+        case 'ArrowLeft':
+          setCurrentIndex((prev) => prev === 0 ? photos.length - 1 : prev - 1);
+          break;
+        case 'ArrowRight':
+          setCurrentIndex((prev) => prev === photos.length - 1 ? 0 : prev + 1);
+          break;
+        case ' ':
+          e.preventDefault();
+          setCurrentIndex((prev) => prev === photos.length - 1 ? 0 : prev + 1);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [photos.length]);
 
   const currentPhoto = photos[currentIndex];
 
@@ -394,80 +492,76 @@ const PhotoViewer = () => {
     );
   }
 
-  const goBack = () => setView('photos');
-  const goPrevious = () => setCurrentIndex(Math.max(0, currentIndex - 1));
-  const goNext = () => setCurrentIndex(Math.min(photos.length - 1, currentIndex + 1));
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={goBack}
-          className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
-          style={{ backgroundColor: 'var(--bg-secondary)' }}
-        >
-          <span className="text-lg" style={{ color: 'var(--text-primary)' }}>←</span>
-        </motion.button>
-        
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {currentIndex + 1} of {photos.length}
-        </h1>
-        
-        <div className="w-12"></div>
-      </div>
+    <div 
+      className="min-h-screen w-full flex items-center justify-center relative" 
+      style={{ backgroundColor: 'var(--bg-primary)' }}
+    >
+      {/* Clean image display - no visible UI elements */}
+      <motion.div
+        key={currentIndex}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="w-full h-full flex items-center justify-center"
+      >
+        <img
+          src={currentPhoto.data}
+          alt={currentPhoto.name}
+          className="max-w-full max-h-full object-contain select-none"
+          style={{
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            objectFit: 'contain'
+          }}
+          draggable={false}
+          onClick={(e) => {
+            // Click left side to go previous, right side to go next
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const imageWidth = rect.width;
+            
+            if (photos.length > 1) {
+              if (clickX < imageWidth / 2) {
+                setCurrentIndex(currentIndex === 0 ? photos.length - 1 : currentIndex - 1);
+              } else {
+                setCurrentIndex(currentIndex === photos.length - 1 ? 0 : currentIndex + 1);
+              }
+            }
+          }}
+        />
+      </motion.div>
 
-      {/* Photo */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="relative max-w-full max-h-full"
-        >
-          <img
-            src={currentPhoto.data}
-            alt={currentPhoto.name}
-            className="w-full h-full object-contain select-none"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain'
-            }}
-            draggable={false}
-          />
-        </motion.div>
-      </div>
-
-      {/* Navigation */}
+      {/* Invisible navigation areas - full screen coverage */}
       {photos.length > 1 && (
-        <div className="flex items-center justify-center space-x-6 px-6 py-6">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={goPrevious}
-            disabled={currentIndex === 0}
-            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-colors touch-button disabled:opacity-50"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
-            <span className="text-xl" style={{ color: 'var(--text-primary)' }}>←</span>
-          </motion.button>
+        <>
+          {/* Left side - Previous */}
+          <div
+            className="absolute left-0 top-0 w-1/2 h-full cursor-pointer"
+            onClick={() => setCurrentIndex(currentIndex === 0 ? photos.length - 1 : currentIndex - 1)}
+            style={{ zIndex: 1 }}
+            title="Previous (or press ←)"
+          />
           
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={goNext}
-            disabled={currentIndex === photos.length - 1}
-            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-colors touch-button disabled:opacity-50"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
-            <span className="text-xl" style={{ color: 'var(--text-primary)' }}>→</span>
-          </motion.button>
-        </div>
+          {/* Right side - Next */}
+          <div
+            className="absolute right-0 top-0 w-1/2 h-full cursor-pointer"
+            onClick={() => setCurrentIndex(currentIndex === photos.length - 1 ? 0 : currentIndex + 1)}
+            style={{ zIndex: 1 }}
+            title="Next (or press →)"
+          />
+        </>
       )}
+
+      {/* Invisible back button - top left corner */}
+      <div
+        className="absolute top-0 left-0 w-16 h-16 cursor-pointer"
+        onClick={goBack}
+        style={{ zIndex: 2 }}
+        title="Back to Photos (or press Escape)"
+      />
     </div>
   );
 };
@@ -488,6 +582,8 @@ const App = () => {
         return <PhotosScreen />;
       case 'viewer':
         return <PhotoViewer />;
+      case 'settings':
+        return <SettingsScreen />;
       case 'welcome':
       default:
         return <WelcomeScreen />;
@@ -496,17 +592,17 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentView}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           {renderView()}
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
     </div>
   );
 };
