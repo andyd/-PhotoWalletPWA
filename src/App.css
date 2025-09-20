@@ -103,22 +103,24 @@ body {
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 16px;
+  gap: 16px;
+  padding: 20px;
   overflow-y: auto;
-  height: calc(100vh - 80px);
+  min-height: 0;
+  flex: 1;
   box-sizing: border-box;
 }
 
 .photo-thumbnail {
   aspect-ratio: 1 / 1;
   background-color: var(--bg-tertiary);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .photo-thumbnail img {
@@ -130,9 +132,9 @@ body {
 }
 
 .photo-thumbnail:hover {
-  transform: scale(1.03);
-  border-color: var(--border-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: scale(1.02);
+  border-color: var(--accent-primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .photo-thumbnail:hover img {
@@ -176,7 +178,8 @@ body {
 /* Responsive breakpoints */
 @media (min-width: 481px) and (max-width: 768px) {
   .photo-grid {
-    gap: 12px;
+    gap: 16px;
+    padding: 24px;
   }
 }
 
@@ -184,7 +187,8 @@ body {
   .photo-grid {
     max-width: 800px;
     margin: 0 auto;
-    gap: 16px;
+    gap: 20px;
+    padding: 32px;
   }
 }
 

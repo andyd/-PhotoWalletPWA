@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Image, Camera, Plus, FileText, RotateCcw, Sparkles } from 'lucide-react';
+import { Upload, Image, Camera, Plus, FileText, RotateCcw } from 'lucide-react';
 import { usePhotoStore } from '../../stores/photoStore';
 import { useUIStore } from '../../stores/uiStore';
 import { FileHandlerService } from '../../services/fileHandler';
@@ -182,23 +182,11 @@ export const PhotoUploader: React.FC = () => {
 
       {/* Main Content Container */}
       <div className="flex-1 flex flex-col justify-center items-center px-8 pb-8 max-w-md mx-auto w-full">
-        {/* App Logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-16"
-        >
-          <div className="w-32 h-32 rounded-3xl flex items-center justify-center shadow-2xl" style={{ backgroundColor: 'var(--accent-primary)' }}>
-            <Sparkles className="w-16 h-16" style={{ color: 'var(--bg-primary)' }} />
-          </div>
-        </motion.div>
-
         {/* App Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className="mb-8"
         >
           <h1 className="text-display font-bold text-center" style={{ color: 'var(--text-primary)' }}>
@@ -210,7 +198,7 @@ export const PhotoUploader: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
           className="mb-20"
         >
           <p className="text-subtitle text-center leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
@@ -222,7 +210,7 @@ export const PhotoUploader: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
           className="w-full max-w-xs"
         >
             {isUploading ? (

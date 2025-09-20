@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Trash2, Eye, RotateCcw, ChevronLeft } from 'lucide-react';
+import { Plus, Settings, Trash2, Eye, RotateCcw } from 'lucide-react';
 import { usePhotoStore } from '../../stores/photoStore';
 import { useUIStore } from '../../stores/uiStore';
 import { createObjectURL, revokeObjectURL } from '../../utils/helpers';
@@ -178,18 +178,22 @@ export const PhotoManager: React.FC = () => {
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center space-x-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setCurrentView('welcome')}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
-              style={{ backgroundColor: 'var(--bg-secondary)' }}
-            >
-              <ChevronLeft className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
-            </motion.button>
             <div>
               <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images (0)</h1>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={confirmReset}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+              style={{ backgroundColor: 'var(--bg-secondary)' }}
+              title="Settings & Reset"
+            >
+              <Settings className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
+            </motion.button>
           </div>
         </div>
 
@@ -218,6 +222,52 @@ export const PhotoManager: React.FC = () => {
             </motion.button>
           </div>
         </div>
+
+        {/* Reset Confirmation Modal */}
+        {showResetConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-2xl p-8 max-w-sm mx-4"
+              style={{ backgroundColor: 'var(--bg-secondary)' }}
+            >
+              <div className="text-center space-y-6">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-lg" style={{ backgroundColor: 'var(--color-bad)' }}>
+                  <RotateCcw className="w-8 h-8" style={{ color: 'var(--bg-primary)' }} />
+                </div>
+                <div className="space-y-3">
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Reset App</h2>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    This will delete all photos and reset the app to its initial state. This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="btn-primary flex-1"
+                    style={{ backgroundColor: 'var(--color-bad)' }}
+                  >
+                    Reset App
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
     );
   }
@@ -237,15 +287,6 @@ export const PhotoManager: React.FC = () => {
       {/* Header Bar */}
       <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
         <div className="flex items-center space-x-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setCurrentView('welcome')}
-            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
-            <ChevronLeft className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
-          </motion.button>
           <div>
             <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images ({photos.length})</h1>
           </div>
