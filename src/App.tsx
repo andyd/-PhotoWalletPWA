@@ -78,7 +78,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="app-container">
       <ErrorBoundary>
         {/* Main content with view transitions */}
         <AnimatePresence mode="wait">

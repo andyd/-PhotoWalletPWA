@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Trash2, Eye } from 'lucide-react';
+import { Plus, Settings, Trash2, Eye, RotateCcw, ChevronLeft } from 'lucide-react';
 import { usePhotoStore } from '../../stores/photoStore';
 import { useUIStore } from '../../stores/uiStore';
 import { createObjectURL, revokeObjectURL } from '../../utils/helpers';
 import { FileHandlerService } from '../../services/fileHandler';
 import { useToast } from '../UI/Toast';
+import { photoStorageService } from '../../services/photoStorage';
 
 interface PhotoCardProps {
   photo: {
@@ -40,62 +41,57 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, onView, onDelete }) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="relative aspect-square group cursor-pointer"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="photo-thumbnail group"
       onClick={() => onView(photo.id)}
     >
-      {/* Image */}
-      <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-800">
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={photo.originalName}
-            className={`
-              w-full h-full object-cover transition-opacity duration-300
-              ${isLoaded ? 'opacity-100' : 'opacity-0'}
-            `}
-            onLoad={handleImageLoad}
-          />
-        )}
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={photo.originalName}
+          className={`
+            w-full h-full object-cover transition-opacity duration-300
+            ${isLoaded ? 'opacity-100' : 'opacity-0'}
+          `}
+          onLoad={handleImageLoad}
+        />
+      )}
 
-        {/* Loading skeleton */}
-        {!isLoaded && (
-          <div className="absolute inset-0 bg-gray-700 animate-pulse" />
-        )}
+      {/* Loading skeleton */}
+      {!isLoaded && (
+        <div className="photo-skeleton" />
+      )}
 
-        {/* Overlay controls */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ opacity: 1, scale: 1 }}
-            className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity"
+      {/* Photo order indicator */}
+      <div className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center shadow-md" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(10px)' }}>
+        <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{photo.order + 1}</span>
+      </div>
+
+      {/* Long press menu */}
+      <div className="absolute inset-0 bg-black bg-opacity-0 group-active:bg-opacity-50 sm:group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center opacity-0 group-active:opacity-100 sm:group-hover:opacity-100">
+        <div className="flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onView(photo.id);
+            }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
           >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(photo.id);
-              }}
-              className="w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-colors"
-            >
-              <Eye className="w-5 h-5 text-white" />
-            </button>
+            <Eye className="w-4 h-4" style={{ color: 'var(--text-primary)' }} />
+          </button>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(photo.id);
-              }}
-              className="w-10 h-10 bg-red-500 bg-opacity-80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-100 transition-colors"
-            >
-              <Trash2 className="w-4 h-4 text-white" />
-            </button>
-          </motion.div>
-        </div>
-
-        {/* Photo order indicator */}
-        <div className="absolute top-2 left-2 w-6 h-6 bg-black bg-opacity-50 backdrop-blur-sm rounded-full flex items-center justify-center">
-          <span className="text-white text-xs font-medium">{photo.order + 1}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(photo.id);
+            }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+            style={{ backgroundColor: 'var(--color-bad)', opacity: 0.9 }}
+          >
+            <Trash2 className="w-4 h-4" style={{ color: 'var(--bg-primary)' }} />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -103,10 +99,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, onView, onDelete }) => {
 };
 
 export const PhotoManager: React.FC = () => {
-  const { photos, removePhoto, canAddMorePhotos, addPhotos } = usePhotoStore();
+  const { photos, removePhoto, canAddMorePhotos, addPhotos, clearAllPhotos } = usePhotoStore();
   const { setCurrentView } = useUIStore();
   const toast = useToast();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleViewPhoto = useCallback((id: string) => {
     const index = photos.findIndex(p => p.id === id);
@@ -123,86 +120,165 @@ export const PhotoManager: React.FC = () => {
     try {
       setIsDeleting(id);
       await removePhoto(id);
-      toast.success('Photo removed');
+      toast.show('Photo deleted successfully', 'success');
     } catch (error) {
-      toast.error('Failed to remove photo');
+      console.error('Error deleting photo:', error);
+      toast.show('Failed to delete photo', 'error');
     } finally {
       setIsDeleting(null);
     }
-  }, [removePhoto, isDeleting, toast]);
+  }, [removePhoto, toast, isDeleting]);
 
   const handleAddMorePhotos = useCallback(async () => {
     try {
-      const files = await FileHandlerService.selectFiles({
-        multiple: true,
-        maxFiles: 10 - photos.length,
-      });
-
+      const fileHandler = new FileHandlerService();
+      const files = await fileHandler.selectFiles();
+      
       if (files.length > 0) {
-        const result = await addPhotos(files);
-
-        if (result.success.length > 0) {
-          toast.success(`Added ${result.success.length} photo${result.success.length > 1 ? 's' : ''}`);
-        }
-
-        if (result.errors.length > 0) {
-          toast.warning(`${result.errors.length} files couldn't be added`);
-        }
+        await addPhotos(files);
+        toast.show(`${files.length} photo${files.length !== 1 ? 's' : ''} added successfully`, 'success');
       }
     } catch (error) {
-      toast.error('Failed to add photos');
+      console.error('Error adding photos:', error);
+      toast.show('Failed to add photos', 'error');
     }
-  }, [photos.length, addPhotos, toast]);
+  }, [addPhotos, toast]);
 
+  const confirmReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const handleReset = async () => {
+    try {
+      await clearAllPhotos();
+      await photoStorageService.clearAllPhotos();
+      setShowResetConfirm(false);
+      toast.show('App reset successfully', 'success');
+      setCurrentView('welcome');
+    } catch (error) {
+      console.error('Error resetting app:', error);
+      toast.show('Failed to reset app', 'error');
+    }
+  };
+
+  // Empty state
   if (photos.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <p className="text-gray-400">No photos in your wallet yet</p>
-          <button
-            onClick={() => setCurrentView('welcome')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Add Photos
-          </button>
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        {/* Mobile Status Bar */}
+        <div className="w-full h-6 flex items-center justify-between px-4 text-xs" style={{ backgroundColor: 'var(--bg-primary)' }}>
+          <span className="text-xs">9:41</span>
+          <div className="flex items-center space-x-1">
+            <span className="text-xs">📶</span>
+            <span className="text-xs">📶</span>
+            <span className="text-xs">🔋</span>
+          </div>
+        </div>
+
+        {/* Header Bar */}
+        <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="flex items-center space-x-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCurrentView('welcome')}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+              style={{ backgroundColor: 'var(--bg-secondary)' }}
+            >
+              <ChevronLeft className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
+            </motion.button>
+            <div>
+              <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images (0)</h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty State Content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+          <div className="text-center space-y-8 max-w-xs mx-auto">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-lg" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <div className="w-8 h-8 flex items-center justify-center text-2xl">📷</div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>No photos yet</h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Add your first photos to get started</p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setCurrentView('welcome')}
+              className="btn-primary w-full text-base font-semibold py-4 px-6 rounded-xl transition-all duration-300"
+              style={{ 
+                background: 'var(--accent-primary)', 
+                color: 'var(--bg-primary)',
+                boxShadow: '0 4px 16px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              + Add Photos
+            </motion.button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black p-4 safe-area-all">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Photo Wallet</h1>
-          <p className="text-gray-400 text-sm">{photos.length} of 10 photos</p>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Mobile Status Bar */}
+      <div className="w-full h-6 flex items-center justify-between px-4 text-xs" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <span className="text-xs">9:41</span>
+        <div className="flex items-center space-x-1">
+          <span className="text-xs">📶</span>
+          <span className="text-xs">📶</span>
+          <span className="text-xs">🔋</span>
+        </div>
+      </div>
+
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-6 py-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+        <div className="flex items-center space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setCurrentView('welcome')}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
+          >
+            <ChevronLeft className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
+          </motion.button>
+          <div>
+            <h1 className="text-title" style={{ color: 'var(--text-primary)' }}>My Images ({photos.length})</h1>
+          </div>
         </div>
 
-        <div className="flex space-x-2">
+        <div className="flex items-center space-x-3">
           {canAddMorePhotos() && (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleAddMorePhotos}
-              className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
-              <Plus className="w-5 h-5 text-white" />
+              <Plus className="w-6 h-6" style={{ color: 'var(--bg-primary)' }} />
             </motion.button>
           )}
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors"
+            onClick={confirmReset}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors touch-button"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
+            title="Settings & Reset"
           >
-            <Settings className="w-5 h-5 text-white" />
+            <Settings className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
           </motion.button>
         </div>
       </div>
 
-      {/* Photo grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {/* Photo Grid Container */}
+      <div className="photo-grid">
         <AnimatePresence>
           {photos.map((photo) => (
             <PhotoCard
@@ -214,33 +290,66 @@ export const PhotoManager: React.FC = () => {
           ))}
         </AnimatePresence>
 
-        {/* Add more button */}
+        {/* Add Photo Button */}
         {canAddMorePhotos() && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleAddMorePhotos}
-            className="aspect-square border-2 border-dashed border-gray-600 hover:border-gray-500 rounded-lg flex items-center justify-center cursor-pointer transition-colors group"
+            className="add-photo-button"
           >
-            <div className="text-center space-y-2">
-              <div className="w-10 h-10 mx-auto bg-gray-700 group-hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors">
-                <Plus className="w-5 h-5 text-gray-400 group-hover:text-gray-300" />
-              </div>
-              <p className="text-xs text-gray-400 group-hover:text-gray-300">Add Photo</p>
-            </div>
+            <div className="icon">+</div>
+            <div className="text">ADD</div>
           </motion.div>
         )}
       </div>
 
-      {/* Empty slots indicators */}
-      {photos.length < 10 && (
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">
-            {10 - photos.length} more photo{10 - photos.length !== 1 ? 's' : ''} can be added
-          </p>
-        </div>
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-2xl p-8 max-w-sm mx-4"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
+          >
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-lg" style={{ backgroundColor: 'var(--color-bad)' }}>
+                <RotateCcw className="w-8 h-8" style={{ color: 'var(--bg-primary)' }} />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Reset App</h2>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  This will delete all photos and reset the app to its initial state. This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="btn-primary flex-1"
+                  style={{ backgroundColor: 'var(--color-bad)' }}
+                >
+                  Reset App
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

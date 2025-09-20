@@ -9,26 +9,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true
+        enabled: false
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheKeyWillBeUsed: async ({ request }) => {
-                return `${request.url}?v=1`;
-              }
-            }
-          }
-        ]
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
       },
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
@@ -69,20 +53,6 @@ export default defineConfig({
             purpose: 'maskable'
           }
         ],
-        screenshots: [
-          {
-            src: 'screenshots/desktop.png',
-            sizes: '1280x720',
-            type: 'image/png',
-            form_factor: 'wide'
-          },
-          {
-            src: 'screenshots/mobile.png',
-            sizes: '390x844',
-            type: 'image/png',
-            form_factor: 'narrow'
-          }
-        ]
       }
     })
   ],

@@ -119,15 +119,17 @@ export const PhotoViewer: React.FC = () => {
 
   if (!currentPhoto || photos.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-gray-400">No photo to display</p>
-          <button
+      <div className="min-h-screen bg-black flex items-center justify-center safe-area-all">
+        <div className="text-center space-y-4 px-4">
+          <p className="text-gray-400 text-lg">No photo to display</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setCurrentView('manager')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl transition-colors font-semibold touch-button"
           >
             Back to Gallery
-          </button>
+          </motion.button>
         </div>
       </div>
     );
@@ -137,11 +139,12 @@ export const PhotoViewer: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
       onClick={showControlsTemporarily}
     >
       {/* Image container */}
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center p-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPhoto.id}
@@ -164,7 +167,12 @@ export const PhotoViewer: React.FC = () => {
               <img
                 src={imageUrl}
                 alt={currentPhoto.originalName}
-                className="max-w-full max-h-full object-contain select-none"
+                className="w-full h-full object-contain select-none"
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '100%',
+                  objectFit: 'contain'
+                }}
                 draggable={false}
               />
             )}
@@ -181,18 +189,20 @@ export const PhotoViewer: React.FC = () => {
               initial={{ opacity: 0, y: -50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -50 }}
-              className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 safe-area-top"
+              className="absolute top-0 left-0 right-0 p-6 safe-area-top"
+              style={{ background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent)' }}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between max-w-6xl mx-auto">
                 <button
                   onClick={() => setCurrentView('manager')}
-                  className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/50 transition-colors"
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-colors touch-button shadow-lg"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)' }}
                 >
-                  <X className="w-6 h-6 text-white" />
+                  <X className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
                 </button>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                     {currentIndex + 1} of {photos.length}
                   </span>
                 </div>
@@ -200,16 +210,18 @@ export const PhotoViewer: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handleShare}
-                    className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/50 transition-colors"
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-colors touch-button shadow-lg"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)' }}
                   >
-                    <Share className="w-5 h-5 text-white" />
+                    <Share className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
                   </button>
 
                   <button
                     onClick={() => setCurrentView('manager')}
-                    className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/50 transition-colors"
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-colors touch-button shadow-lg"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)' }}
                   >
-                    <Grid className="w-5 h-5 text-white" />
+                    <Grid className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
                   </button>
                 </div>
               </div>
@@ -223,9 +235,10 @@ export const PhotoViewer: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   onClick={goToPrevious}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/50 transition-colors"
+                  className="absolute left-6 top-1/2 transform -translate-y-1/2 w-14 h-14 rounded-full flex items-center justify-center transition-colors touch-button shadow-lg"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)' }}
                 >
-                  <ChevronLeft className="w-6 h-6 text-white" />
+                  <ChevronLeft className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
                 </motion.button>
 
                 <motion.button
@@ -233,9 +246,10 @@ export const PhotoViewer: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   onClick={goToNext}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/50 transition-colors"
+                  className="absolute right-6 top-1/2 transform -translate-y-1/2 w-14 h-14 rounded-full flex items-center justify-center transition-colors touch-button shadow-lg"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)' }}
                 >
-                  <ChevronRight className="w-6 h-6 text-white" />
+                  <ChevronRight className="w-6 h-6" style={{ color: 'var(--text-primary)' }} />
                 </motion.button>
               </>
             )}
@@ -245,11 +259,12 @@ export const PhotoViewer: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
-              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 safe-area-bottom"
+              className="absolute bottom-0 left-0 right-0 p-6 safe-area-bottom"
+              style={{ background: 'linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent)' }}
             >
-              <div className="text-center">
-                <p className="text-white font-medium">{currentPhoto.originalName}</p>
-                <p className="text-gray-300 text-sm">
+              <div className="text-center max-w-6xl mx-auto">
+                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{currentPhoto.originalName}</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                   {isZoomed ? 'Double tap to zoom out' : 'Double tap to zoom in'}
                 </p>
               </div>
@@ -258,24 +273,6 @@ export const PhotoViewer: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Photo indicators */}
-      {photos.length > 1 && (
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-2">
-          {photos.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`
-                w-2 h-2 rounded-full transition-all duration-200
-                ${index === currentIndex
-                  ? 'bg-white scale-125'
-                  : 'bg-white/50 hover:bg-white/70'
-                }
-              `}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };

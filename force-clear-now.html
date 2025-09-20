@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Clear Photo Wallet Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #b91c1c;
+        }
+        .success {
+            background: #059669;
+        }
+        .success:hover {
+            background: #047857;
+        }
+        #log {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            min-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Force Clear Photo Wallet Data</h1>
+        <p>This will aggressively clear ALL data associated with your Photo Wallet app.</p>
+
+        <button onclick="forceClearEverything()">🗑️ FORCE CLEAR ALL DATA</button>
+        <button onclick="goToPhotoWallet()" class="success">🚀 Go to Clean Photo Wallet</button>
+
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += message + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        async function forceClearEverything() {
+            log('🧹 Starting AGGRESSIVE data clearing...');
+
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                log('✅ localStorage cleared');
+
+                // Clear sessionStorage
+                sessionStorage.clear();
+                log('✅ sessionStorage cleared');
+
+                // Clear all IndexedDB databases
+                try {
+                    const databases = await indexedDB.databases();
+                    log(`🔍 Found ${databases.length} databases: ${databases.map(db => db.name).join(', ')}`);
+
+                    for (const db of databases) {
+                        if (db.name) {
+                            await new Promise((resolve, reject) => {
+                                const deleteRequest = indexedDB.deleteDatabase(db.name);
+                                deleteRequest.onsuccess = () => {
+                                    log(`🗑️ Deleted database: ${db.name}`);
+                                    resolve();
+                                };
+                                deleteRequest.onerror = () => {
+                                    log(`❌ Failed to delete: ${db.name}`);
+                                    resolve(); // Continue anyway
+                                };
+                                deleteRequest.onblocked = () => {
+                                    log(`⚠️ Blocked deleting: ${db.name} (will retry)`);
+                                    resolve(); // Continue anyway
+                                };
+                                // Timeout after 5 seconds
+                                setTimeout(() => {
+                                    log(`⏰ Timeout deleting: ${db.name}`);
+                                    resolve();
+                                }, 5000);
+                            });
+                        }
+                    }
+                } catch (dbError) {
+                    log(`❌ IndexedDB error: ${dbError.message}`);
+                }
+
+                // Clear service workers
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (const registration of registrations) {
+                            await registration.unregister();
+                            log('🧹 Service worker unregistered');
+                        }
+                    } catch (swError) {
+                        log(`⚠️ Service worker error: ${swError.message}`);
+                    }
+                }
+
+                // Clear caches
+                if ('caches' in window) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        log(`🔍 Found ${cacheNames.length} caches`);
+                        await Promise.all(cacheNames.map(async name => {
+                            await caches.delete(name);
+                            log(`🗑️ Deleted cache: ${name}`);
+                        }));
+                    } catch (cacheError) {
+                        log(`⚠️ Cache error: ${cacheError.message}`);
+                    }
+                }
+
+                log('✅ CLEARING COMPLETE!');
+                log('🎉 All data has been cleared!');
+                log('');
+                log('Now click "Go to Clean Photo Wallet" or manually go to:');
+                log('http://localhost:5174');
+
+            } catch (error) {
+                log(`❌ Error during clearing: ${error.message}`);
+            }
+        }
+
+        function goToPhotoWallet() {
+            log('🚀 Redirecting to clean Photo Wallet...');
+            // Add timestamp to bypass any remaining cache
+            window.location.href = 'http://localhost:5174?clear=' + Date.now();
+        }
+
+        // Auto-log on page load
+        log('🏁 Ready to clear Photo Wallet data');
+        log('Click "FORCE CLEAR ALL DATA" to start');
+    </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ export class FileHandlerService {
     const {
       multiple = true,
       accept = SUPPORTED_IMAGE_TYPES.join(','),
-      maxFiles = 10,
+      maxFiles = 100,
     } = options;
 
     return new Promise((resolve) => {

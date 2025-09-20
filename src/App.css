@@ -8,21 +8,45 @@
   --safe-area-inset-left: env(safe-area-inset-left);
 }
 
-/* Dark theme (default) */
+/* Dark theme (default) - Photo Wallet Design System */
 :root,
 :root.dark {
+  /* Pure black backgrounds for maximum photo contrast */
   --bg-primary: #000000;
-  --bg-secondary: #111111;
+  --bg-secondary: #0a0a0a;
   --bg-tertiary: #1a1a1a;
+  --bg-elevated: #1f1f1f;
+  
+  /* Bold typography colors */
   --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-tertiary: #888888;
+  --text-secondary: #888888;
+  --text-tertiary: #666666;
+  --text-muted: #444444;
+  
+  /* Modern accent blue */
+  --accent-primary: #0080ff;
+  --accent-hover: #0066cc;
+  --accent-active: #0052a3;
+  
+  /* Interactive states */
   --border-color: #333333;
-  --accent-color: #007aff;
-  --accent-hover: #0056cc;
-  --success-color: #34c759;
-  --warning-color: #ff9500;
-  --error-color: #ff3b30;
+  --border-subtle: #222222;
+  --hover-bg: #1a1a1a;
+  --active-bg: #2a2a2a;
+  
+  /* Photo-focused colors */
+  --overlay-dark: rgba(0, 0, 0, 0.8);
+  --overlay-medium: rgba(0, 0, 0, 0.6);
+  --overlay-light: rgba(0, 0, 0, 0.3);
+  
+  /* Legacy compatibility */
+  --color-good: #0080ff;
+  --color-neutral: #ffaa00;
+  --color-bad: #ff4444;
+  --accent-color: #0080ff;
+  --success-color: #00cc66;
+  --warning-color: #ffaa00;
+  --error-color: #ff4444;
 }
 
 /* Light theme */
@@ -68,6 +92,116 @@ body {
   height: 100%;
 }
 
+/* Main app container with proper padding */
+.app-container {
+  min-height: 100vh;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 16px);
+  box-sizing: border-box;
+}
+
+/* Photo Grid - Modern Design */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  height: calc(100vh - 80px);
+  box-sizing: border-box;
+}
+
+.photo-thumbnail {
+  aspect-ratio: 1 / 1;
+  background-color: var(--bg-tertiary);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border: 1px solid var(--border-subtle);
+}
+
+.photo-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.photo-thumbnail:hover {
+  transform: scale(1.03);
+  border-color: var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.photo-thumbnail:hover img {
+  transform: scale(1.05);
+}
+
+.add-photo-button {
+  aspect-ratio: 1 / 1;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-photo-button:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 128, 255, 0.2);
+}
+
+.add-photo-button .icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+.add-photo-button .text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* Responsive breakpoints */
+@media (min-width: 481px) and (max-width: 768px) {
+  .photo-grid {
+    gap: 12px;
+  }
+}
+
+@media (min-width: 769px) {
+  .photo-grid {
+    max-width: 800px;
+    margin: 0 auto;
+    gap: 16px;
+  }
+}
+
+/* Loading skeleton */
+.photo-skeleton {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 /* Prevent zoom on iOS */
 input[type="color"],
 input[type="date"],
@@ -104,6 +238,25 @@ textarea {
   user-select: text;
 }
 
+/* 8pt Spacing System */
+.spacing-1 { margin: 4px; padding: 4px; }
+.spacing-2 { margin: 8px; padding: 8px; }
+.spacing-3 { margin: 12px; padding: 12px; }
+.spacing-4 { margin: 16px; padding: 16px; }
+.spacing-5 { margin: 20px; padding: 20px; }
+.spacing-6 { margin: 24px; padding: 24px; }
+.spacing-8 { margin: 32px; padding: 32px; }
+.spacing-10 { margin: 40px; padding: 40px; }
+.spacing-12 { margin: 48px; padding: 48px; }
+
+/* Bold Typography Scale */
+.text-display { font-size: 32px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+.text-title { font-size: 24px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+.text-subtitle { font-size: 18px; font-weight: 600; line-height: 1.3; }
+.text-body { font-size: 16px; font-weight: 500; line-height: 1.5; }
+.text-caption { font-size: 14px; font-weight: 600; line-height: 1.4; }
+.text-small { font-size: 12px; font-weight: 500; line-height: 1.4; }
+
 /* Touch-friendly button styles */
 .touch-button {
   min-height: 44px;
@@ -113,10 +266,108 @@ textarea {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  border-radius: 12px;
 }
 
 .touch-button:active {
   transform: scale(0.95);
+}
+
+/* Modern card components */
+.card {
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.card-elevated {
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-color);
+}
+
+/* Modern Button Styles */
+.btn-primary {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 128, 255, 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 128, 255, 0.4);
+}
+
+.btn-primary:active {
+  background: var(--accent-active);
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 128, 255, 0.3);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary:hover {
+  background: var(--hover-bg);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-ghost:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 640px) {
+  .touch-button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  .card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
 }
 
 /* Safe area handling */
@@ -241,4 +492,54 @@ textarea {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  /* Larger touch targets on mobile */
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  /* Better spacing for mobile */
+  .mobile-spacing {
+    padding: 1rem;
+  }
+  
+  /* Prevent text selection on mobile UI elements */
+  .mobile-ui {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Improve button feedback on mobile */
+  .mobile-button:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Tablet and desktop improvements */
+@media (min-width: 768px) {
+  /* Hover effects only on devices that support them */
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Better spacing for larger screens */
+  .desktop-spacing {
+    padding: 2rem;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1024px) {
+  .large-screen-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
 }

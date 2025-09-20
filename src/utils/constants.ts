@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  MAX_PHOTOS: 10,
+  MAX_PHOTOS: 1000, // Effectively unlimited
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   MAX_ZOOM_LEVEL: 3,
   MIN_ZOOM_LEVEL: 0.5,
